@@ -2,7 +2,7 @@ import os
 import openai
 
 if __name__ == '__main__':
-    openai.api_key = "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"
+    openai.api_key = "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"
 
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -11,7 +11,7 @@ if __name__ == '__main__':
         ]
     )
 
-    print(completion.choices[0].message)
+    print(completion.choices[0].message["content"])
 
 
 
