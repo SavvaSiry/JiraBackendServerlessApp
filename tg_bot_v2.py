@@ -36,6 +36,7 @@ def handle_voice_message(message):
 
     # Send text message back to user
     text = response.json().get('result')
+    bot.reply_to(message, 'Ваш запрос отправлен: ' + '"' + text + '"\n\nОжидайте ответа...')
     if text:
         bot.reply_to(message, 'Запрос: "' + text + '"' + sent_to_gpt(text))
     else:
@@ -48,6 +49,7 @@ def handle_gpt_request(message):
 
 
 def sent_to_gpt(text):
+    print(text)
     try:
         completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",

@@ -1,0 +1,75 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+servers:
+- url: https://d5dm09megqckrd48o48c.apigw.yandexcloud.net
+paths:
+  /:
+    get:
+      x-yc-apigateway-integration:
+        type: dummy
+        content:
+          '*': Hello, World!
+        http_code: 200
+        http_headers:
+          Content-Type: text/plain
+  /login:
+    get:
+      operationId: redirect-py
+      x-yc-apigateway-integration: { type: cloud_functions, function_id: "d4end44rojph4onnrnjj", service_account: "ajeph3l839ge7nf1fvni" }
+      responses:
+        302:
+          description: 'Login redirect page'
+          headers:
+            Location:
+              schema: { type: string }
+              description: "Redirect location"
+      parameters:
+        - name:     code
+          in:       query
+          required: true
+          schema:
+            type: string
+  # /user/{ID}:
+  #   get:
+  #     summary: Get ID
+  #     operationId: user
+  #     parameters:
+  #       - name: ID
+  #         in: path
+  #         description: Return ID
+  #         required: true
+  #         schema:
+  #           type: string
+  #     x-yc-apigateway-integration:
+  #       type: cloud_functions
+  #       function_id: d4ekada2t02o24t3l861
+  #       service_account_id: ajeph3l839ge7nf1fvni
+  /tasks/{ID}:
+    get:
+      operationId: get-tasks
+      parameters:
+        - name: ID
+          in: path
+          description: Return tasks list
+          required: true
+          schema:
+            type: string
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eritoe34hvo5c4sf9r
+        service_account_id: ajeph3l839ge7nf1fvni
+  /create/{ID}:
+    get:
+      operationId: create-task
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4ebi9f8tlgqe82ktj3a
+        service_account_id: ajeph3l839ge7nf1fvni
