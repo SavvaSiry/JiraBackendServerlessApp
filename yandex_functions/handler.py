@@ -6,8 +6,8 @@ def handler(event, context):
     r = requests.get('https://jsonplaceholder.typicode.com/todos/1')
     result = use_function(event, context)
     return {
-        'statusCode': 200,
-        'body': str(r.text),
+        'statusCode': result.statusCode,
+        'body': result.body,
     }
 
 
