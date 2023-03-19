@@ -5,71 +5,193 @@ info:
 servers:
 - url: https://d5dm09megqckrd48o48c.apigw.yandexcloud.net
 paths:
-  /:
+  /{file+}:
+      options:
+        parameters:
+          - name: file
+            in: path
+            description: greedy param
+            required: false
+            schema:
+              type: string
+        description: Greedy options
+        operationId: greedyOptions
+        x-yc-apigateway-integration:
+          type: dummy
+          http_code: 200
+          content:
+            "*": ""
+          http_headers:
+            Allow: OPTIONS, GET, HEAD, POST
+            Access-Control-Allow-Origin: '*'
+            Access-Control-Allow-Headers: Content-Type, Authorization
+  /test:
     get:
+      security:
+        - bearerAuth: []
       x-yc-apigateway-integration:
-        type: dummy
-        content:
-          '*': Hello, World!
-        http_code: 200
-        http_headers:
-          Content-Type: text/plain
+        type: cloud_functions
+        function_id: d4e430i3updf13jibbig
   /login:
     get:
       operationId: redirect-py
       x-yc-apigateway-integration: { type: cloud_functions, function_id: "d4end44rojph4onnrnjj", service_account: "ajeph3l839ge7nf1fvni" }
-      responses:
-        302:
-          description: 'Login redirect page'
-          headers:
-            Location:
-              schema: { type: string }
-              description: "Redirect location"
       parameters:
         - name:     code
           in:       query
           required: true
           schema:
             type: string
-  # /user/{ID}:
-  #   get:
-  #     summary: Get ID
-  #     operationId: user
-  #     parameters:
-  #       - name: ID
-  #         in: path
-  #         description: Return ID
-  #         required: true
-  #         schema:
-  #           type: string
-  #     x-yc-apigateway-integration:
-  #       type: cloud_functions
-  #       function_id: d4ekada2t02o24t3l861
-  #       service_account_id: ajeph3l839ge7nf1fvni
-  /tasks/{ID}:
+  /info:
     get:
-      operationId: get-tasks
-      parameters:
-        - name: ID
-          in: path
-          description: Return tasks list
+      security:
+        - bearerAuth: []
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e3dgln3fn1oicnjitt
+  /tasks:
+      get:
+        security:
+          - bearerAuth: [ ]
+        summary: Get all tasks
+        x-yc-apigateway-integration:
+          type: cloud_functions
+          function_id: d4eritoe34hvo5c4sf9r
+          service_account_id: ajeph3l839ge7nf1fvni
+        responses:
+          200:
+            description: List of tasks
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Task'
+      post:
+        security:
+          - bearerAuth: [ ]
+        summary: Create a new task
+        x-yc-apigateway-integration:
+          type: cloud_functions
+          function_id: d4eritoe34hvo5c4sf9r
+          service_account_id: ajeph3l839ge7nf1fvni
+        requestBody:
+          description: Task object to be created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
           required: true
-          schema:
-            type: string
+        responses:
+          201:
+            description: Task created successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Task'
+          400:
+            description: Invalid request body
+  /tasks/{id}:
+    get:
+      security:
+        - bearerAuth: [ ]
+      summary: Get a task by ID
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4eritoe34hvo5c4sf9r
         service_account_id: ajeph3l839ge7nf1fvni
-  /create/{ID}:
-    get:
-      operationId: create-task
       parameters:
-        - name: ID
+        - name: id
           in: path
+          description: ID of the task to get
           required: true
           schema:
             type: string
+      responses:
+        200:
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        404:
+          description: Task not found
+    put:
+      security:
+        - bearerAuth: [ ]
+      summary: Update a task by ID
       x-yc-apigateway-integration:
         type: cloud_functions
-        function_id: d4ebi9f8tlgqe82ktj3a
+        function_id: d4eritoe34hvo5c4sf9r
         service_account_id: ajeph3l839ge7nf1fvni
+      parameters:
+        - name: id
+          in: path
+          description: ID of the task to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Task object to be updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      responses:
+        200:
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        400:
+          description: Invalid request body
+        404:
+          description: Task not found
+    delete:
+      security:
+        - bearerAuth: [ ]
+      summary: Delete a task by ID
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eritoe34hvo5c4sf9r
+        service_account_id: ajeph3l839ge7nf1fvni
+      parameters:
+        - name: id
+          in: path
+          description: ID of the task to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Task deleted successfully
+        404:
+          description: Task not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      x-yc-apigateway-authorizer:
+          type: function
+          function_id: d4e0klvlgsd0kd84e0rj
+          authorizer_result_ttl_in_seconds: 300
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the task
+        title:
+          type: string
+          description: Title of the task
+        description:
+          type: string
+          description: Description of the task
+      required:
+        - title
