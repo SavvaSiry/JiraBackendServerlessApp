@@ -7,11 +7,11 @@ import datetime
 def handler(event, context):
     user_tokens = json.loads(get_token_with_code(str(event["params"]["code"])).text)
     user_info = get_user_info_with_token(user_tokens["access_token"])
-    jwt_token = authorize_user(user_info)
+    response = authorize_user(user_info)
     return {
         'statusCode': 200,
         'headers': {'Location': 'https://www.google.com/'},
-        'body': str(jwt_token),
+        'body': str(response),
     }
 
 
@@ -33,16 +33,17 @@ def authorize_user(user_data):
     data_dict = json.loads(user_data)
     login_value = data_dict['login']
     now = datetime.datetime.utcnow()
-    exp = now + datetime.timedelta(minutes=30)
-    claims = {'iss': 'my_issuer', 'sub': 'my_subject', 'aud': 'my_audience', 'exp': exp, 'iat': now,
+    minutes = 30
+    exp = now + datetime.timedelta(minutes=minutes)
+    claims = {'iss': 'my_issuer', 'sub': 'my_subject', 'aud': 'my_audience', 'exp': 0, 'iat': 0,
               'login': login_value}
     # Generate the JWT token
-    secret_key = 'my_secret_key'
+    secret_key = 'secret_key'
     algorithm = 'HS256'
     jwt_token = jwt.encode(claims, secret_key, algorithm=algorithm)
-    request = {
+    response = {
         'access_token': jwt_token,
         'token_type': 'Bearer',
-        'expires_in': exp
+        'expires_in': minutes * 60
     }
-    return jwt_token
+    return response

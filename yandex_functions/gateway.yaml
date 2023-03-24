@@ -22,7 +22,8 @@ paths:
         content:
           "*": ""
         http_headers:
-          Allow: OPTIONS, GET, HEAD, POST
+          Allow: OPTIONS, PUT, GET, HEAD, POST
+          Access-Control-Allow-Methods: PUT, DELETE
           Access-Control-Allow-Origin: '*'
           Access-Control-Allow-Headers: Content-Type, Authorization
   /login:
@@ -35,13 +36,13 @@ paths:
           required: true
           schema:
             type: string
-  /info:
-    get:
-      security:
-        - bearerAuth: [ ]
-      x-yc-apigateway-integration:
-        type: cloud_functions
-        function_id: d4e3dgln3fn1oicnjitt
+  # /info:
+  #   get:
+  #     security:
+  #       - bearerAuth: [ ]
+  #     x-yc-apigateway-integration:
+  #       type: cloud_functions
+  #       function_id: d4e3dgln3fn1oicnjitt
   /tasks:
     get:
       security:
@@ -162,19 +163,13 @@ paths:
           description: Task deleted successfully
         404:
           description: Task not found
-  /project/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+  /project:
     get:
       security:
         - bearerAuth: [ ]
       x-yc-apigateway-integration:
         type: cloud_functions
-        function_id: d4emnhfvq6ojuigfjpb5
+        function_id: d4e5hhlj8s70altod16c
       summary: Get project by ID
       responses:
         '200':
@@ -190,7 +185,7 @@ paths:
         - bearerAuth: [ ]
       x-yc-apigateway-integration:
         type: cloud_functions
-        function_id: d4emnhfvq6ojuigfjpb5
+        function_id: d4e5hhlj8s70altod16c
       summary: Create new project
       requestBody:
         required: true
@@ -207,12 +202,19 @@ paths:
                 $ref: '#/components/schemas/Project'
         '400':
           description: Invalid request body
+  /project/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       security:
         - bearerAuth: [ ]
       x-yc-apigateway-integration:
         type: cloud_functions
-        function_id: d4emnhfvq6ojuigfjpb5
+        function_id: d4e5hhlj8s70altod16c
       summary: Update project by ID
       requestBody:
         required: true
@@ -234,13 +236,92 @@ paths:
         - bearerAuth: [ ]
       x-yc-apigateway-integration:
         type: cloud_functions
-        function_id: d4emnhfvq6ojuigfjpb5
+        function_id: d4e5hhlj8s70altod16c
       summary: Delete project by ID
       responses:
         '204':
           description: Project deleted successfully
         '404':
           description: Project not found
+  /role/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: [ ]
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eth13qfi84lbes4koq
+      summary: Get roles list by ID
+      responses:
+        '200':
+          description: Role get successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Invalid request body
+    post:
+      security:
+        - bearerAuth: [ ]
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eth13qfi84lbes4koq
+      summary: Add role by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: Role add successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Invalid request body
+    put:
+      security:
+        - bearerAuth: [ ]
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eth13qfi84lbes4koq
+      summary: Update role by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Invalid request body
+    delete:
+      security:
+        - bearerAuth: [ ]
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4eth13qfi84lbes4koq
+      summary: Delete role by ID
+      responses:
+        '204':
+          description: Role deleted successfully
+        '404':
+          description: Role not found
 
 components:
   securitySchemes:
@@ -267,11 +348,20 @@ components:
           description: Description of the task
       required:
         - title
+    Role:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: Login of the user
+        project_id:
+          type: string
+          description: Id of the project
+        role:
+          type: string
+          description: User role of the project
     Project:
       type: object
-      required:
-        - name
-        - manager
       properties:
         id:
           type: string
@@ -289,4 +379,4 @@ components:
         id: 215c746b-b053-4b47-a9cc-3f92ad56f864
         name: Project A
         description: This is project A
-        manager: John Doe
+        manager: Name Name
