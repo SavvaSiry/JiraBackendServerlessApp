@@ -1,4 +1,3 @@
-import datetime
 import uuid
 import ydb
 import ydb.iam
@@ -55,8 +54,7 @@ def create_task(event):
                                task["project_id"],
                                task["status"],
                                task["title"],
-                               task["users"],
-                               task["number"])
+                               task["users"])
 
     return {
         'statusCode': 200,
@@ -72,15 +70,6 @@ def get_tasks(event, id_param):
     }
 
 
-# def get_task(event, id_param):
-#     task = json.loads(event["body"])
-#     result = get_task_query(pool, id_param)
-#     return {
-#         'statusCode': 200,
-#         'body': 'GET /tasks/{id} ' + str(result)
-#     }
-
-
 def update_task(event, id_param):
     task = json.loads(event["body"])
     result = upsert_task_query(pool,
@@ -91,8 +80,7 @@ def update_task(event, id_param):
                                task["project_id"],
                                task["status"],
                                task["title"],
-                               json.dumps(task["users"]),
-                               task["number"])
+                               json.dumps(task["users"]))
     return {
         'statusCode': 200,
         'body': 'PUT /tasks/{id} ' + str(result)
@@ -115,16 +103,16 @@ def error(event):
     }
 
 
-def create_task_query(pool, creator, deadline, description, project_id, status, title, users, number):
+def create_task_query(pool, creator, deadline, description, project_id, status, title, users):
     return upsert_task_query(pool, uuid.uuid4(), creator, deadline, description, project_id, status, title,
-                             json.dumps(users), number)
+                             json.dumps(users))
 
 
-def upsert_task_query(pool, task_id, creator, deadline, description, project_id, status, title, users, number):
+def upsert_task_query(pool, task_id, creator, deadline, description, project_id, status, title, users):
     def callee(session):
         return session.transaction().execute(
-            "UPSERT INTO `tasks` ( `id`, `creator`, `deadline`, `description`, `project_id`, `status`, `title`, `users`, `number`) VALUES ('{}', '{}', CAST({} as Datetime), '{}', '{}', '{}', '{}', CAST(@@{}@@ as Json), {});".format(
-                task_id, creator, deadline, description, project_id, status, title, users, number),
+            "UPSERT INTO `tasks` ( `id`, `creator`, `deadline`, `description`, `project_id`, `status`, `title`, `users`) VALUES ('{}', '{}', CAST({} as Datetime), '{}', '{}', '{}', '{}', CAST(@@{}@@ as Json));".format(
+                task_id, creator, deadline, description, project_id, status, title, users),
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
@@ -141,18 +129,6 @@ def delete_task_query(pool, task_id):
         )
 
     return pool.retry_operation_sync(callee)
-
-
-# def get_task_query(pool, task_id):
-#     def callee(session):
-#         return session.transaction().execute(
-#             "SELECT `id`, `creator`, `deadline`, `description`, `project_id`, `status`, `title`, `users` FROM `tasks` WHERE `id` = '{}';".format(
-#                 task_id),
-#             commit_tx=True,
-#             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
-#         )
-
-#     return pool.retry_operation_sync(callee)
 
 
 def get_tasks_query(pool, project_id):
