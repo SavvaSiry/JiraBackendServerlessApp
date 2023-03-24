@@ -2,15 +2,29 @@ import requests
 import json
 import jwt
 import datetime
+import ydb
+import ydb.iam
+import os
+
+# Create driver in global space.
+driver = ydb.Driver(
+  endpoint=os.getenv('YDB_ENDPOINT'),
+  database=os.getenv('YDB_DATABASE'),
+  credentials=ydb.iam.MetadataUrlCredentials())
+# Wait for the driver to become active for requests.
+driver.wait(fail_fast=True, timeout=5)
+# Create the session pool instance to manage YDB sessions.
+pool = ydb.SessionPool(driver)
 
 
 def handler(event, context):
-    user_tokens = json.loads(get_token_with_code(str(event["params"]["code"])).text)
+    user_tokens = json.loads(get_token_with_code(event["params"]["code"]).text)
     user_info = get_user_info_with_token(user_tokens["access_token"])
+    add_user_if_not_exist(pool, user_info["login"], user_info["default_email"], user_info["default_avatar_id"])
+    print(user_info)
     response = authorize_user(user_info)
     return {
         'statusCode': 200,
-        'headers': {'Location': 'https://www.google.com/'},
         'body': str(response),
     }
 
@@ -27,12 +41,12 @@ def get_token_with_code(code):
 
 def get_user_info_with_token(token):
     r = requests.get("https://login.yandex.ru/info?oauth_token=" + token)
-    return r.text
+    data_dict = json.loads(r.text)
+    return data_dict
 
 
 def authorize_user(user_data):
-    data_dict = json.loads(user_data)
-    login_value = data_dict['login']
+    login_value = user_data['login']
     now = datetime.datetime.utcnow()
     minutes = 30
     exp = now + datetime.timedelta(minutes=minutes)
@@ -48,7 +62,7 @@ def authorize_user(user_data):
         'token_type': 'Bearer',
         'expires_in': minutes * 60
     }
-    return response
+    return json.dumps(response)
 
 
 def add_user_if_not_exist(pool, login, email, icon):
