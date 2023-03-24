@@ -1,5 +1,6 @@
 import uuid
 import ydb
+import ydb.iam
 import os
 import json
 
@@ -69,7 +70,7 @@ def update_project(event):
                                   project["description"])
     return {
         'statusCode': 200,
-        'body': 'GET /tasks ' + str(result)
+        'body': 'UPDATE /projects ' + str(result)
     }
 
 
@@ -78,7 +79,7 @@ def delete_project(event):
     result = delete_project_query(pool, project_id)
     return {
         'statusCode': 200,
-        'body': 'GET /tasks ' + str(result)
+        'body': 'DELETE /projects ' + str(result)
     }
 
 
@@ -92,7 +93,7 @@ def error(event):
 def upsert_project_query(pool, project_id, title, description):
     def callee(session):
         return session.transaction().execute(
-            f"UPSERT INTO `projects` (`id`, description`, `title`) VALUES ('{project_id}', '{description}', '{title}');",
+            f"UPSERT INTO `projects` (`id`, `description`, `title`) VALUES ('{project_id}', '{description}', '{title}');",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
@@ -104,7 +105,7 @@ def create_project_query(pool, title, description, login):
     def callee(session):
         project_id = uuid.uuid4()
         return session.transaction().execute(
-            f"UPSERT INTO `projects` (`id`, description`, `title`) VALUES ('{project_id}', '{description}', '{title}');UPSERT INTO `roles` ( `user_id`, `project_id`, `role` ) VALUES ('{login}','{project_id}','manager');",
+            f"UPSERT INTO `projects` (`id`, `description`, `title`) VALUES ('{project_id}', '{description}', '{title}');UPSERT INTO `roles` ( `user_id`, `project_id`, `role` ) VALUES ('{login}','{project_id}','manager');",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
@@ -115,7 +116,7 @@ def create_project_query(pool, title, description, login):
 def delete_project_query(pool, project_id):
     def callee(session):
         return session.transaction().execute(
-            f"DELETE FROM `projects` WHERE `id` = '{project_id}';DELETE FROM `tasks` WHERE `project_id` = '{project_id}'; DELETE FROM `roles` WHERE `project_id` = '{project_id}'; COMMIT;",
+            f"DELETE FROM `projects` WHERE `id` = '{project_id}';DELETE FROM `tasks` WHERE `project_id` = '{project_id}'; DELETE FROM `roles` WHERE `project_id` = '{project_id}';",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )

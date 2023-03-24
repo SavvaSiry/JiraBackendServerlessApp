@@ -25,11 +25,11 @@ def handler(event, context):
 def use_function(event, context):
     httpMethod = event["httpMethod"]
     project_id = event["params"]["id"]
+    if httpMethod == 'GET':
+        return get_roles(project_id)
     payload = json.loads(event["body"])
     if httpMethod == 'POST':
         return add_role(payload, project_id)
-    elif httpMethod == 'GET':
-        return get_roles(payload, project_id)
     elif httpMethod == 'PUT':
         return add_role(payload, project_id)
     elif httpMethod == 'DELETE':
@@ -49,7 +49,7 @@ def add_role(payload, project_id):
     }
 
 
-def get_roles(payload, project_id):
+def get_roles(project_id):
     result = get_roles_query(pool,
                              project_id)
     return {
