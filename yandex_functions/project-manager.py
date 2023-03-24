@@ -1,11 +1,13 @@
-import datetime
 import uuid
 import ydb
 import os
 import json
 
 # Create driver in global space.
-driver = ydb.Driver(endpoint=os.getenv('YDB_ENDPOINT'), database=os.getenv('YDB_DATABASE'))
+driver = ydb.Driver(
+  endpoint=os.getenv('YDB_ENDPOINT'),
+  database=os.getenv('YDB_DATABASE'),
+  credentials=ydb.iam.MetadataUrlCredentials())
 # Wait for the driver to become active for requests.
 driver.wait(fail_fast=True, timeout=5)
 # Create the session pool instance to manage YDB sessions.
@@ -39,7 +41,30 @@ def create_project(event):
     project = json.loads(event["body"])
     login = event["requestContext"]["authorizer"]["login"]
     result = create_project_query(pool,
-                                  login,
+                                  project["title"],
+                                  project["description"],
+                                  login)
+    return {
+        'statusCode': 200,
+        'body': 'POST /project ' + str(result)
+    }
+
+
+def get_projects(event):
+    login = event["requestContext"]["authorizer"]["login"]
+    result = get_projects_query(pool, login)
+    info = result[0].rows
+    return {
+        'statusCode': 200,
+        'body': string_to_json(str(info))
+    }
+
+
+def update_project(event):
+    project_id = event["params"]["id"]
+    project = json.loads(event["body"])
+    result = upsert_project_query(pool,
+                                  project_id,
                                   project["title"],
                                   project["description"])
     return {
@@ -48,33 +73,9 @@ def create_project(event):
     }
 
 
-def get_projects(event):
-    login = event["requestContext"]["authorizer"]["login"]
-    result = get_projects_query(pool, login)
-    return {
-        'statusCode': 200,
-        'body': 'GET /tasks ' + str(result)
-    }
-
-
-def update_project(event):
-    id_param = event["params"]["id"]
-    project = json.loads(event["body"])
-    login = event["requestContext"]["authorizer"]["login"]
-    result = upsert_project_query(pool,
-                                  id_param,
-                                  project["title"],
-                                  project["description"],
-                                  login)
-    return {
-        'statusCode': 200,
-        'body': 'GET /tasks ' + str(result)
-    }
-
-
 def delete_project(event):
-    id_param = event["params"]["id"]
-    result = delete_project_query(pool, id_param)
+    project_id = event["params"]["id"]
+    result = delete_project_query(pool, project_id)
     return {
         'statusCode': 200,
         'body': 'GET /tasks ' + str(result)
@@ -88,14 +89,22 @@ def error(event):
     }
 
 
-def create_project_query(pool, login, title, description):
-    return upsert_project_query(pool, uuid.uuid4(), title, description, login)
-
-
-def upsert_project_query(pool, project_id,  title, description, login):
+def upsert_project_query(pool, project_id, title, description):
     def callee(session):
         return session.transaction().execute(
-            "UPSERT INTO `projects` (`id`, `description`, `manager`, `title`) VALUES ( '{}', '{}', '{}', '{}');".format(project_id, description, login, title),
+            f"UPSERT INTO `projects` (`id`, description`, `title`) VALUES ('{project_id}', '{description}', '{title}');",
+            commit_tx=True,
+            settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
+        )
+
+    return pool.retry_operation_sync(callee)
+
+
+def create_project_query(pool, title, description, login):
+    def callee(session):
+        project_id = uuid.uuid4()
+        return session.transaction().execute(
+            f"UPSERT INTO `projects` (`id`, description`, `title`) VALUES ('{project_id}', '{description}', '{title}');UPSERT INTO `roles` ( `user_id`, `project_id`, `role` ) VALUES ('{login}','{project_id}','manager');",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
@@ -106,7 +115,7 @@ def upsert_project_query(pool, project_id,  title, description, login):
 def delete_project_query(pool, project_id):
     def callee(session):
         return session.transaction().execute(
-            "DELETE FROM `projects` WHERE `id` = '{}';".format(project_id),
+            f"DELETE FROM `projects` WHERE `id` = '{project_id}';DELETE FROM `tasks` WHERE `project_id` = '{project_id}'; DELETE FROM `roles` WHERE `project_id` = '{project_id}'; COMMIT;",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
@@ -117,7 +126,7 @@ def delete_project_query(pool, project_id):
 def get_projects_query(pool, login):
     def callee(session):
         return session.transaction().execute(
-            "SELECT `id`, `description`, `manager`, `title` FROM `projects` WHERE `manager` = '{}';".format(login),
+            f"SELECT `projects`.id, `projects`.title, `projects`.description, `roles`.role FROM `projects` LEFT JOIN `roles` ON `projects`.id = `roles`.project_id WHERE `roles`.user_id = '{login}';",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )
