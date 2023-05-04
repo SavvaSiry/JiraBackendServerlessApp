@@ -145,4 +145,4 @@ def get_tasks_query(pool, project_id):
 
 def string_to_json(input_string):
     # Remove the single quotes from the input string
-    return input_string.replace("b'", "'").replace("'", "\"").replace("\"{", "{").replace("}\"", "}").replace("\"\"[]\"\"", "[]")
+    return input_string.replace("b'", "'").replace("'", "\"").replace("\"{", "{").replace("}\"", "}").replace("\"\"[]\"\"", "[]").replace("None", "\"\"").replace("\"[", "[").replace("]\"", "]")

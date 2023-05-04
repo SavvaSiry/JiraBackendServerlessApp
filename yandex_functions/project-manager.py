@@ -127,7 +127,7 @@ def delete_project_query(pool, project_id):
 def get_projects_query(pool, login):
     def callee(session):
         return session.transaction().execute(
-            f"SELECT `projects`.id, `projects`.title, `projects`.description, `roles`.role FROM `projects` LEFT JOIN `roles` ON `projects`.id = `roles`.project_id WHERE `roles`.user_id = '{login}';",
+            f"SELECT `projects`.id as id, `projects`.title as title, `projects`.description as description, `roles`.role as role FROM `projects` LEFT JOIN `roles` ON `projects`.id = `roles`.project_id WHERE `roles`.user_id = '{login}';",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )

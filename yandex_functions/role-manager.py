@@ -89,7 +89,7 @@ def add_role_query(pool, user_id, project_id, role):
 def get_roles_query(pool, project_id):
     def callee(session):
         return session.transaction().execute(
-            f"SELECT `user_id`, `project_id`, `role` FROM `roles` WHERE `project_id` = '{project_id}';",
+            f"SELECT `user_id`, `project_id`, `role`, `icon` FROM `roles` LEFT JOIN `user` ON `roles`.user_id = `user`.login WHERE `project_id` = '{project_id}';",
             commit_tx=True,
             settings=ydb.BaseRequestSettings().with_timeout(10).with_operation_timeout(5)
         )

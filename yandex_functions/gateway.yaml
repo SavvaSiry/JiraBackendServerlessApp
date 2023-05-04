@@ -36,13 +36,13 @@ paths:
           required: true
           schema:
             type: string
-  # /info:
-  #   get:
-  #     security:
-  #       - bearerAuth: [ ]
-  #     x-yc-apigateway-integration:
-  #       type: cloud_functions
-  #       function_id: d4e3dgln3fn1oicnjitt
+  /info:
+    get:
+      security:
+        - bearerAuth: [ ]
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e2e7tm9cgdtsksiq6o
   /tasks:
     get:
       security:
